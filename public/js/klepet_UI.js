@@ -1,7 +1,9 @@
 function divElementEnostavniTekst(sporocilo) {
   var jeSmesko = sporocilo.indexOf('http://sandbox.lavbic.net/teaching/OIS/gradivo/') > -1;
-  if (jeSmesko) {
-    sporocilo = sporocilo.replace(/\</g, '&lt;').replace(/\>/g, '&gt;').replace('&lt;img', '<img').replace('png\' /&gt;', 'png\' />');
+  var soSlike = sporocilo.indexOf('<img class=\'pic\' src=') > -1;
+  if (jeSmesko || soSlike) {
+    sporocilo = sporocilo.replace(/\</g, '&lt;').replace(/\>/g, '&gt;').replace(/&lt;(img src='http:\/\/sandbox\.lavbic\.net\/teaching\/OIS\/gradivo\/|img class='pic' src=)/g, "<$1")
+    .replace(/(\.jpg|\.png|\.gif)' \/&gt;/g, "$1' />");
     return $('<div style="font-weight: bold"></div>').html(sporocilo);
   } else {
     return $('<div style="font-weight: bold;"></div>').text(sporocilo);
@@ -14,6 +16,7 @@ function divElementHtmlTekst(sporocilo) {
 
 function procesirajVnosUporabnika(klepetApp, socket) {
   var sporocilo = $('#poslji-sporocilo').val();
+  najdiSlike(sporocilo);
   sporocilo = dodajSmeske(sporocilo);
   var sistemskoSporocilo;
 
@@ -26,6 +29,7 @@ function procesirajVnosUporabnika(klepetApp, socket) {
     sporocilo = filtirirajVulgarneBesede(sporocilo);
     klepetApp.posljiSporocilo(trenutniKanal, sporocilo);
     $('#sporocila').append(divElementEnostavniTekst(sporocilo));
+    //najdiSlike(sporocilo);
     $('#sporocila').scrollTop($('#sporocila').prop('scrollHeight'));
   }
 
@@ -52,6 +56,13 @@ function filtirirajVulgarneBesede(vhod) {
   return vhod;
 }
 
+function najdiSlike(vhod) {
+  var slika = vhod.toString().match(new RegExp('\\bhttps?:\/\/(?!sandbox.lavbic.net/teaching/OIS/gradivo/)\\S*\.(png|jpg|gif)\\b', 'gi'));
+  for(var i in slika) {
+    $('#sporocila').append(divElementHtmlTekst('<img class=\'pic\' src=\"'+ slika[i] + '\">'));
+  }
+}
+
 $(document).ready(function() {
   var klepetApp = new Klepet(socket);
 
@@ -75,7 +86,9 @@ $(document).ready(function() {
 
   socket.on('sporocilo', function (sporocilo) {
     var novElement = divElementEnostavniTekst(sporocilo.besedilo);
+    
     $('#sporocila').append(novElement);
+    najdiSlike(sporocilo.besedilo);
   });
   
   socket.on('kanali', function(kanali) {
