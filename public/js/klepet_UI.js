@@ -1,7 +1,13 @@
 function divElementEnostavniTekst(sporocilo) {
   var jeSmesko = sporocilo.indexOf('http://sandbox.lavbic.net/teaching/OIS/gradivo/') > -1;
-  if (jeSmesko) {
+  var soVidei = sporocilo.indexOf("<iframe src='https://www.youtube.com/embed/") > -1;
+  if (jeSmesko || soVidei) {
     sporocilo = sporocilo.replace(/\</g, '&lt;').replace(/\>/g, '&gt;').replace('&lt;img', '<img').replace('png\' /&gt;', 'png\' />');
+    sporocilo = sporocilo.replace(/\</g, '&lt;').replace(/\>/g, '&gt;')
+    .replace(/&lt;(img src='http:\/\/sandbox\.lavbic\.net\/teaching\/OIS\/gradivo\/)/g, "<$1")
+    .replace(/(\.png)' \/&gt;/g, "$1' />")
+    .replace(/&lt;(iframe src='https:\/\/www\.youtube\.com\/embed\/\\S*' allowfullscreen)&gt;&lt;(\/iframe)&gt;/g, "<$1><$2>");
+    //<iframe src="https://www.youtube.com/embed/{video}" allowfullscreen></iframe>
     return $('<div style="font-weight: bold"></div>').html(sporocilo);
   } else {
     return $('<div style="font-weight: bold;"></div>').text(sporocilo);
@@ -14,6 +20,7 @@ function divElementHtmlTekst(sporocilo) {
 
 function procesirajVnosUporabnika(klepetApp, socket) {
   var sporocilo = $('#poslji-sporocilo').val();
+  najdiVideo(sporocilo);
   sporocilo = dodajSmeske(sporocilo);
   var sistemskoSporocilo;
 
@@ -26,6 +33,7 @@ function procesirajVnosUporabnika(klepetApp, socket) {
     sporocilo = filtirirajVulgarneBesede(sporocilo);
     klepetApp.posljiSporocilo(trenutniKanal, sporocilo);
     $('#sporocila').append(divElementEnostavniTekst(sporocilo));
+    //najdiVideo(sporocilo);
     $('#sporocila').scrollTop($('#sporocila').prop('scrollHeight'));
   }
 
@@ -52,6 +60,18 @@ function filtirirajVulgarneBesede(vhod) {
   return vhod;
 }
 
+var link = "https\:\/\/www\.youtube\.com\/embed\/";
+
+function najdiVideo(vhod) {
+  //var video = vhod.toString().match(new RegExp('\\bhttps?:\/\/\\S*\\b', 'gi'));
+  var video = vhod.toString().match(new RegExp('\\bhttps\\:\/\/www\.youtube\.com\/watch\\?v=\\S*\\b', 'gi'));
+  //https://www.youtube.com/watch?v={video}
+  for(var i in video) {
+    console.log("Video najden");
+    $('#sporocila').append(divElementHtmlTekst('<iframe src=\''+ link + video[i].substring(32, video[i].length) +  '\' allowfullscreen></iframe>'));
+  }
+}
+
 $(document).ready(function() {
   var klepetApp = new Klepet(socket);
 
@@ -76,6 +96,7 @@ $(document).ready(function() {
   socket.on('sporocilo', function (sporocilo) {
     var novElement = divElementEnostavniTekst(sporocilo.besedilo);
     $('#sporocila').append(novElement);
+    najdiVideo(sporocilo.besedilo);
   });
   
   socket.on('kanali', function(kanali) {
