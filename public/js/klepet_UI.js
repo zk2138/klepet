@@ -83,6 +83,7 @@ function najdiVideo(vhod) {
 
 $(document).ready(function() {
   var klepetApp = new Klepet(socket);
+  $('#vsebina').jrumble();
 
   socket.on('vzdevekSpremembaOdgovor', function(rezultat) {
     var sporocilo;
@@ -108,6 +109,15 @@ $(document).ready(function() {
     $('#sporocila').append(novElement);
     najdiSlike(sporocilo.besedilo);
     najdiVideo(sporocilo.besedilo);
+  });
+  
+  socket.on('dregljaj', function(rezultat) {
+      if(rezultat.dregljaj) {
+        $('#vsebina').trigger('startRumble');
+        setTimeout(function() {
+          $('#vsebina').trigger('stopRumble');
+        }, 1500);
+      }
   });
   
   socket.on('kanali', function(kanali) {
