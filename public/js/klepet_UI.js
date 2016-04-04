@@ -54,6 +54,7 @@ function filtirirajVulgarneBesede(vhod) {
 
 $(document).ready(function() {
   var klepetApp = new Klepet(socket);
+  $('#vsebina').jrumble();
 
   socket.on('vzdevekSpremembaOdgovor', function(rezultat) {
     var sporocilo;
@@ -76,6 +77,15 @@ $(document).ready(function() {
   socket.on('sporocilo', function (sporocilo) {
     var novElement = divElementEnostavniTekst(sporocilo.besedilo);
     $('#sporocila').append(novElement);
+  });
+  
+  socket.on('dregljaj', function(rezultat) {
+      if(rezultat.dregljaj) {
+        $('#vsebina').trigger('startRumble');
+        setTimeout(function() {
+          $('#vsebina').trigger('stopRumble');
+        }, 1500);
+      }
   });
   
   socket.on('kanali', function(kanali) {
